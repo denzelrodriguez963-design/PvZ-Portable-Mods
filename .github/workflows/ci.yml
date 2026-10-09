@@ -304,7 +304,8 @@ jobs:
           -DANDROID_ABI=$ABI \
           -DANDROID_PLATFORM=android-$ANDROID_API \
           -DSDL2_DIR=$SDL2_PREFIX/lib/cmake/SDL2 \
-          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_BUILD_TYPE=Release \
+-DPVZ_ENABLE_LUA=ON
 
         cmake --build $BUILD_DIR -j$(nproc)
 
