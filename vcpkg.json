@@ -4,12 +4,13 @@
     "libogg",
     "libopenmpt",
     "libpng",
-    "libvorbis",
+    "lua",
     "mpg123",
     {
       "name": "sdl2",
       "platform": "!android"
     },
+    "libvorbis",
     "zlib"
   ]
 }
