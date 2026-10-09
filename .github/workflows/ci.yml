@@ -196,14 +196,15 @@ jobs:
           java-version: "21"
           distribution: temurin
 
-      # FIX: Use v4 and install the required SDK packages here.
+      # FIX: Install the SDK packages individually.
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: |
-            platform-tools
-            platforms;android-36
-            build-tools;36.0.0
+
+      - name: Install Android SDK packages
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-36"
+          sdkmanager "build-tools;36.0.0"
 
       - name: Install Android NDK
         uses: nttld/setup-ndk@v1
