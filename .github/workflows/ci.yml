@@ -144,42 +144,6 @@ jobs:
         name: pvz-portable-windows-msvc-x64
         path: dist/
 
-  # build-switch:
-  #   name: Build for Switch
-  #   runs-on: ubuntu-latest
-  #   container:
-  #     image: devkitpro/devkita64:latest
-  #   steps:
-  #     - uses: actions/checkout@v6
-  #       with:
-  #         fetch-depth: 0
-  #
-  #     - name: Compile libopenmpt for Switch
-  #       shell: bash
-  #       run: |
-  #         source $DEVKITPRO/switchvars.sh
-  #         git clone https://github.com/OpenMPT/openmpt
-  #         cd openmpt
-  #         make CONFIG=gcc SHARED_LIB=0 DYNLINK=0 EXAMPLES=0 OPENMPT123=0 TEST=0 PREFIX=$PORTLIBS_PREFIX install
-  #
-  #     - name: Compile PvZ-Portable for Switch
-  #       shell: bash
-  #       run: |
-  #         source $DEVKITPRO/switchvars.sh
-  #         mkdir build
-  #         cd build
-  #         aarch64-none-elf-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE=-O2
-  #         make
-  #         aarch64-none-elf-strip pvz-portable.elf
-  #
-  #     - name: Upload Artifact
-  #       uses: actions/upload-artifact@v7
-  #       with:
-  #         name: pvz-portable-switch
-  #         path: |
-  #           ./build/pvz-portable.nro
-  #           ./build/pvz-portable.elf
-
   build-macos:
     name: Build for macOS (aarch64)
     runs-on: macos-latest
@@ -242,17 +206,18 @@ jobs:
       uses: android-actions/setup-android@v3
 
     - name: Install Android NDK
+      uses: nttld/setup-ndk@v1
+      with:
+        ndk-version: r27c
+        add-to-path: false
+
+    - name: Configure Android NDK
       run: |
-        if [ -n "$ANDROID_NDK_LATEST_HOME" ] && [ -d "$ANDROID_NDK_LATEST_HOME" ]; then
-          echo "ANDROID_NDK=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
-          echo "Using pre-installed NDK: $ANDROID_NDK_LATEST_HOME"
-        else
-          yes | sdkmanager --install "ndk;$(sdkmanager --list 2>/dev/null | grep -oP 'ndk;\K[\d.]+' | sort -V | tail -1)" || true
-          NDK_DIR=$(ls -d "$ANDROID_HOME"/ndk/*/ 2>/dev/null | sort -V | tail -1)
-          echo "ANDROID_NDK=${NDK_DIR%/}" >> "$GITHUB_ENV"
-          echo "ANDROID_NDK_HOME=${NDK_DIR%/}" >> "$GITHUB_ENV"
-        fi
+        echo "ANDROID_NDK=$ANDROID_NDK_HOME" >> "$GITHUB_ENV"
+        echo "ANDROID_NDK_HOME=$ANDROID_NDK_HOME" >> "$GITHUB_ENV"
+        echo "ANDROID_NDK_ROOT=$ANDROID_NDK_HOME" >> "$GITHUB_ENV"
+        echo "NDK location: $ANDROID_NDK_HOME"
+        test -f "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake"
 
     - name: Download SDL2 Source
       run: |
