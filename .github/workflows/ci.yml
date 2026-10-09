@@ -100,7 +100,7 @@ jobs:
         mkdir build
         cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCONSOLE=OFF -DBUILD_STATIC=ON -DCMAKE_COLOR_DIAGNOSTICS=ON
         cmake --build build
-        
+
         mkdir -p dist
         cp build/pvz-portable.exe dist/
         strip dist/pvz-portable.exe
@@ -153,15 +153,15 @@ jobs:
   #     - uses: actions/checkout@v6
   #       with:
   #         fetch-depth: 0
-
+  #
   #     - name: Compile libopenmpt for Switch
   #       shell: bash
   #       run: |
   #         source $DEVKITPRO/switchvars.sh
   #         git clone https://github.com/OpenMPT/openmpt
   #         cd openmpt
-  #         make CONFIG=gcc SHARED_LIB=0 DYNLINK=0 EXAMPLES=0 OPENMPT123=0 TEST=0 PREFIX=$PORTLIBS_PREFIX install 
-
+  #         make CONFIG=gcc SHARED_LIB=0 DYNLINK=0 EXAMPLES=0 OPENMPT123=0 TEST=0 PREFIX=$PORTLIBS_PREFIX install
+  #
   #     - name: Compile PvZ-Portable for Switch
   #       shell: bash
   #       run: |
@@ -171,7 +171,7 @@ jobs:
   #         aarch64-none-elf-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS_RELEASE=-O2
   #         make
   #         aarch64-none-elf-strip pvz-portable.elf
-
+  #
   #     - name: Upload Artifact
   #       uses: actions/upload-artifact@v7
   #       with:
@@ -243,13 +243,11 @@ jobs:
 
     - name: Install Android NDK
       run: |
-        # Use the latest NDK available on the runner
         if [ -n "$ANDROID_NDK_LATEST_HOME" ] && [ -d "$ANDROID_NDK_LATEST_HOME" ]; then
           echo "ANDROID_NDK=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
           echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
           echo "Using pre-installed NDK: $ANDROID_NDK_LATEST_HOME"
         else
-          # Fallback: install via sdkmanager
           yes | sdkmanager --install "ndk;$(sdkmanager --list 2>/dev/null | grep -oP 'ndk;\K[\d.]+' | sort -V | tail -1)" || true
           NDK_DIR=$(ls -d "$ANDROID_HOME"/ndk/*/ 2>/dev/null | sort -V | tail -1)
           echo "ANDROID_NDK=${NDK_DIR%/}" >> "$GITHUB_ENV"
@@ -261,7 +259,7 @@ jobs:
         SDL2_TAG=$(git ls-remote --tags https://github.com/libsdl-org/SDL.git 'refs/tags/release-2.*' \
           | sed 's|.*refs/tags/release-||' | sort -V | tail -1)
         if [ -z "$SDL2_TAG" ]; then
-          SDL2_TAG="2.32.10" # Fallback to a known stable version if tag retrieval fails
+          SDL2_TAG="2.32.10"
         fi
         echo "Using SDL2 version: $SDL2_TAG"
         wget -q "https://github.com/libsdl-org/SDL/releases/download/release-${SDL2_TAG}/SDL2-${SDL2_TAG}.tar.gz"
@@ -275,8 +273,6 @@ jobs:
 
     - name: Build SDL2 Shared Library
       run: |
-        # On Android, SDL2 MUST be a shared library because the Java-side
-        # SDLActivity loads it via System.loadLibrary("SDL2").
         cmake -B build-sdl2 \
           -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/build/cmake/android.toolchain.cmake \
           -DANDROID_ABI=arm64-v8a \
@@ -305,25 +301,21 @@ jobs:
           -DANDROID_PLATFORM=android-$ANDROID_API \
           -DSDL2_DIR=$SDL2_PREFIX/lib/cmake/SDL2 \
           -DCMAKE_BUILD_TYPE=Release \
--DPVZ_ENABLE_LUA=ON
+          -DPVZ_ENABLE_LUA=ON
 
         cmake --build $BUILD_DIR -j$(nproc)
 
-        # Collect all shared libraries into jniLibs for Gradle to package
         JNILIBS=android/app/src/main/jniLibs/$ABI
         mkdir -p $JNILIBS
         cp -L $BUILD_DIR/libmain.so $JNILIBS/
 
-        # Copy SDL2 shared library
         cp -L $SDL2_PREFIX/lib/libSDL2*.so $JNILIBS/
 
-        # Copy any .so dependencies from vcpkg (manifest mode installs into build dir)
         VCPKG_LIB=$BUILD_DIR/vcpkg_installed/arm64-android/lib
         for so in "$VCPKG_LIB"/*.so; do
           [ -f "$so" ] && cp -L "$so" $JNILIBS/
         done
 
-        # Strip debug symbols to reduce APK size
         STRIP=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip
         for so in "$JNILIBS"/*.so; do
           "$STRIP" --strip-unneeded "$so"
@@ -336,8 +328,6 @@ jobs:
       run: |
         cd android
         echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-        # Use gradle wrapper; package pre-built native libraries into a release APK (debug-signed)
         gradle wrapper
         ./gradlew assembleRelease -PusePrebuiltLibs=true --no-daemon
 
@@ -424,7 +414,7 @@ jobs:
           | grep -v '\^{}' | sed 's|.*refs/tags/libopenmpt-||' \
           | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -1)
         if [ -z "$OPENMPT_TAG" ]; then
-          OPENMPT_TAG="0.8.4" # Fallback to a known stable version if tag retrieval fails
+          OPENMPT_TAG="0.8.4"
         fi
         echo "Using libopenmpt version: $OPENMPT_TAG"
         git clone --depth=1 --branch "libopenmpt-${OPENMPT_TAG}" https://github.com/OpenMPT/openmpt.git /tmp/libopenmpt-src
