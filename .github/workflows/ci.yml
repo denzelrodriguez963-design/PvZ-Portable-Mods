@@ -196,12 +196,14 @@ jobs:
           java-version: "21"
           distribution: temurin
 
+      # FIX: Use v4 and install the required SDK packages here.
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK packages
-        run: |
-          sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+        uses: android-actions/setup-android@v4
+        with:
+          packages: |
+            platform-tools
+            platforms;android-36
+            build-tools;36.0.0
 
       - name: Install Android NDK
         uses: nttld/setup-ndk@v1
@@ -269,14 +271,14 @@ jobs:
           cmake --build $BUILD_DIR -j$(nproc)
 
           JNILIBS=android/app/src/main/jniLibs/$ABI
-          mkdir -p $JNILIBS
+          mkdir -p "$JNILIBS"
 
-          cp -L $BUILD_DIR/libmain.so $JNILIBS/
-          cp -L $SDL2_PREFIX/lib/libSDL2*.so $JNILIBS/
+          cp -L "$BUILD_DIR/libmain.so" "$JNILIBS/"
+          cp -L "$SDL2_PREFIX"/lib/libSDL2*.so "$JNILIBS/"
 
           VCPKG_LIB=$BUILD_DIR/vcpkg_installed/arm64-android/lib
           for so in "$VCPKG_LIB"/*.so; do
-            [ -f "$so" ] && cp -L "$so" $JNILIBS/
+            [ -f "$so" ] && cp -L "$so" "$JNILIBS/"
           done
 
           STRIP=$ANDROID_NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip
@@ -285,7 +287,7 @@ jobs:
           done
 
           echo "Collected .so files:"
-          ls -lh $JNILIBS/
+          ls -lh "$JNILIBS/"
 
       - name: Build APK with Gradle
         run: |
